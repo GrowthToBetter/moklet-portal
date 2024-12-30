@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(uuid()) @map("user_id") @db.Char(36)
+  email         String     @unique
+  photo_profile String?
+  name          String
+  clasess       Type?
+  absent        String?
+  Phone         String?
+  role          Role       @default(SISWA)
+  gender        Gender?    @default(Male)
+  userAuth      UserAuth?
+  generation    String?
+  cover         String?
+  File          fileWork[] @relation("file_id")
+  comment       comment[]  @relation("comment")
+}
+
+model fileWork {
+  id          String        @id @default(uuid()) @map("file_id") @db.Char(36)
+  filename    String
+  userType    Type
+  type        String?
+  status      RequestStatus @default(PENDING)
+  userId      String
+  user        User?         @relation("file_id", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  path        String
+  description String?
+  coverFile   String?
+  genre       String
+  Like        Int           @default(0)
+  views       Int           @default(0)
+  userRole    Role          @default(SISWA)
+  createdAt   DateTime      @default(now())
+  suggest     comment[]     @relation("sugest_file")
+  comment     comment[]     @relation("comment_file")
+}
+
+model comment {
+  id           String    @id @default(uuid()) @map("comment_id") @db.Char(36)
+  Text         String?
+  userId       String?
+  fileId       String?
+  user         User?     @relation("comment", fields: [userId], references: [id])
+  file         fileWork? @relation("comment_file", fields: [fileId], references: [id])
+  fileSugestId String?
+  fileSugest   fileWork? @relation("sugest_file", fields: [fileSugestId], references: [id])
+}
+
+model Genre {
+  id    String @id @default(uuid()) @map("comment_id") @db.Char(36)
+  Genre String
+}
+
+model UserAuth {
+  id         String    @id @default(uuid()) @map("userauth_id") @db.Char(36)
+  password   String?
+  last_login DateTime?
+  userEmail  String    @unique
+  user       User      @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+}
+
+enum Role {
+  SISWA
+  GURU
+  ADMIN
+  VIEWER
+  VALIDATOR
+  DELETE
+}
+
+enum Gender {
+  Male
+  Female
+}
+
+enum RequestStatus {
+  PENDING
+  VERIFIED
+  DENIED
+}
+
+enum Type {
+  SISWA
+  GURU
+  ALUMNI
+}
