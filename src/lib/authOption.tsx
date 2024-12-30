@@ -7,11 +7,6 @@ import client from "./prisma";
 import { compareSync } from "bcrypt";
 import { createUser, findUser, updateUser } from "@/utils/user.query";
 import { revalidatePath } from "next/cache";
-import { Role } from "@prisma/client";
-
-
-
-
 
 declare module "next-auth" {
   interface Session {
@@ -66,12 +61,15 @@ export const authOptions: AuthOptions = {
             where: {
               email: credentials?.email,
             },
-            include: { userAuth: true,},
+            include: { userAuth: true },
           });
 
           if (!findUser) return null;
 
-          const ComparePassword = compareSync(credentials?.password as string, findUser.userAuth?.password as string);
+          const ComparePassword = compareSync(
+            credentials?.password as string,
+            findUser.userAuth?.password as string
+          );
           if (!ComparePassword) return null;
 
           const user = {
@@ -110,16 +108,29 @@ export const authOptions: AuthOptions = {
         if (user.email) {
           const userDatabase = await findUser({ email: user.email });
           if (!userDatabase) {
-            const role = "VIEWER" as Role;
+            const role =
+              user.email.includes("student") &&
+              user.email.includes("smktelkom-mlg")
+                ? "SISWA"
+                : user.email === "dummyakun12311@gmail.com"
+                ? "ADMIN"
+                : user.email.includes("smktelkom-mlg")
+                ? "GURU"
+                : user.email === "dummysiswa5@gmail.com"
+                ? "SISWA"
+                : "VIEWER";
 
             if (!role) {
               return "/AccessDenied";
             }
             await createUser({
               email: user.email,
-              photo_profile: user.image || "https://res.cloudinary.com/dvwhepqbd/image/upload/v1720580914/pgfrhzaobzcajvugl584.png",
+              photo_profile:
+                user.image ||
+                "https://res.cloudinary.com/dvwhepqbd/image/upload/v1720580914/pgfrhzaobzcajvugl584.png",
               name: user.name || "",
-              cover: "https://res.cloudinary.com/dhjeoo1pm/image/upload/v1726727429/mdhydandphi4efwa7kte.png",
+              cover:
+                "https://res.cloudinary.com/dhjeoo1pm/image/upload/v1726727429/mdhydandphi4efwa7kte.png",
               role,
               userAuth: {
                 create: {
@@ -162,8 +173,13 @@ export const authOptions: AuthOptions = {
           session.user.name = token.name || "";
           session.user.password = token.password || "";
           session.user.role = token.role || "SISWA";
-          session.user.image = token.picture || "https://res.cloudinary.com/dvwhepqbd/image/upload/v1720580914/pgfrhzaobzcajvugl584.png";
-          await updateUser({ email: token.email }, { userAuth: { update: { last_login: new Date() } } });
+          session.user.image =
+            token.picture ||
+            "https://res.cloudinary.com/dvwhepqbd/image/upload/v1720580914/pgfrhzaobzcajvugl584.png";
+          await updateUser(
+            { email: token.email },
+            { userAuth: { update: { last_login: new Date() } } }
+          );
         }
         return session;
       } catch (error) {
